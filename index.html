@@ -2,52 +2,192 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Финансовый Менеджер</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg: #0f172a; --card: #1e293b; --green: #22c55e;
-      --red: #ef4444; --blue: #38bdf8; --purple: #a855f7;
-      --text: #f8fafc; --muted: #94a3b8;
+      --bg: #0b0f19; 
+      --card-bg: rgba(22, 30, 49, 0.75); 
+      --card-border: rgba(255, 255, 255, 0.08);
+      --green: #10b981; 
+      --red: #f43f5e; 
+      --yellow: #f59e0b;
+      --blue: #38bdf8; 
+      --purple: #8b5cf6;
+      --text: #f1f5f9; 
+      --muted: #64748b;
     }
+    
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
     body {
-      font-family: -apple-system, sans-serif; background: var(--bg);
-      color: var(--text); padding: 12px; margin: 0; padding-bottom: 70px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 12px;
+      margin: 0;
+      padding-bottom: 85px;
+      user-select: none;
     }
+
     .card {
-      background: var(--card); border-radius: 16px; padding: 16px;
-      margin-bottom: 12px; border: 1px solid #334155;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     }
-    .balance-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+
+    .balance-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .balance-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
     .balance-val { font-size: 28px; font-weight: 800; color: var(--blue); margin: 4px 0; }
-    .stats-row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; }
-    .inc { color: var(--green); } .exp { color: var(--red); }
-    .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-    .cat-btn {
-      background: #0f172a; border: 1px solid #334155; border-radius: 10px;
-      padding: 10px 4px; color: #fff; text-align: center; font-size: 11px; cursor: pointer;
+    
+    .stats-row { 
+      display: flex; 
+      justify-content: space-between; 
+      margin-top: 10px; 
+      padding-top: 10px;
+      border-top: 1px solid var(--card-border);
+      font-size: 12px; 
     }
-    input {
-      width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px;
-      border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box;
+    .inc { color: var(--green); } 
+    .exp { color: var(--red); }
+
+    .input-group { margin-bottom: 10px; }
+    
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.8);
+      color: #fff;
+      font-size: 13px;
+      outline: none;
     }
+
     button.main-btn {
-      width: 100%; padding: 10px; border-radius: 8px; border: none;
-      font-weight: bold; cursor: pointer; background: var(--blue); color: #000;
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--blue), #0284c7);
+      color: #0f172a;
+      font-size: 14px;
     }
-    .progress-bg { background: #0f172a; border-radius: 8px; height: 10px; overflow: hidden; margin: 6px 0; }
-    .progress-fill { background: var(--purple); height: 100%; width: 0%; transition: width 0.3s; }
-    .tx-item, .sub-item {
-      display: flex; justify-content: space-between; padding: 8px 0;
-      border-bottom: 1px solid #334155; font-size: 13px;
+
+    .btn-grid { 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 8px; 
+      margin-top: 8px; 
     }
+
+    .cat-btn {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px 4px;
+      color: #fff;
+      text-align: center;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .cat-btn:active { background: var(--blue); color: #000; }
+
+    /* Быстрые шаблоны */
+    .quick-list {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-top: 8px;
+    }
+    .quick-btn {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 20px;
+      padding: 8px 12px;
+      white-space: nowrap;
+      font-size: 12px;
+      color: var(--blue);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .quick-btn:active { background: var(--blue); color: #000; }
+
+    /* Календарь активности */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .cal-head { font-size: 10px; color: var(--muted); font-weight: bold; padding-bottom: 4px; }
+    .cal-day {
+      min-height: 48px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 1px solid transparent;
+      padding: 2px;
+    }
+    .cal-day .day-num { font-weight: bold; }
+    .cal-day .day-amt { font-size: 9px; margin-top: 2px; opacity: 0.9; }
+    
+    .cal-day.level-0 { background: rgba(16, 185, 129, 0.1); color: var(--green); } 
+    .cal-day.level-1 { background: rgba(245, 158, 11, 0.2); color: var(--yellow); } 
+    .cal-day.level-2 { background: rgba(244, 63, 94, 0.25); color: var(--red); } 
+    .cal-day.today { border-color: var(--blue); }
+
+    .progress-bg { background: rgba(15, 23, 42, 0.8); border-radius: 8px; height: 8px; overflow: hidden; margin: 6px 0; }
+    .progress-fill { background: linear-gradient(90deg, var(--purple), var(--blue)); height: 100%; width: 0%; }
+    
+    .tx-item, .sub-item, .cat-edit-item, .stat-item {
+      display: flex; justify-content: space-between; align-items: center; padding: 10px 0;
+      border-bottom: 1px solid var(--card-border); font-size: 13px;
+    }
+    .tx-item:last-child, .cat-edit-item:last-child, .stat-item:last-child { border-bottom: none; }
+    .del-btn { color: var(--red); cursor: pointer; margin-left: 10px; font-weight: bold; padding: 4px; }
+
+    .flex-row { display: flex; gap: 6px; }
+
+    .settings-link {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 8px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
     .nav {
-      position: fixed; bottom: 0; left: 0; right: 0; background: var(--card);
-      display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #334155;
+      position: fixed; bottom: 0; left: 0; right: 0; 
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      display: flex; justify-content: space-around; 
+      padding: 10px 0; border-top: 1px solid var(--card-border);
+      z-index: 100;
     }
-    .nav-btn { color: var(--muted); font-size: 11px; text-align: center; cursor: pointer; }
+    .nav-btn { color: var(--muted); font-size: 10px; text-align: center; cursor: pointer; flex: 1; }
     .nav-btn.active { color: var(--blue); font-weight: bold; }
+    
     .tab-content { display: none; }
     .tab-content.active { display: block; }
   </style>
@@ -56,26 +196,55 @@
 
   <!-- ВКЛАДКА 1: Главная -->
   <div id="tab-main" class="tab-content active">
-    <div class="card">
+    <div class="card balance-card">
       <div class="balance-lbl">Доступный Баланс</div>
-      <div class="balance-val" id="balance">0 ₽</div>
-      <div style="font-size: 12px; color: var(--green);" id="daily-limit">Лимит: ~0 ₽/день</div>
+      <div class="balance-val" id="balance">0 ₸</div>
+      <div style="font-size: 12px; color: var(--green);" id="daily-limit">Дневной лимит: ~0 ₸/день</div>
       <div class="stats-row">
-        <span>Доходы: <b class="inc" id="income">+0 ₽</b></span>
-        <span>Расходы: <b class="exp" id="expense">-0 ₽</b></span>
+        <span>Доходы: <b class="inc" id="income">+0 ₸</b></span>
+        <span>Расходы: <b class="exp" id="expense">-0 ₸</b></span>
       </div>
     </div>
 
+    <!-- Быстрые шаблоны -->
     <div class="card">
-      <div class="balance-lbl" style="margin-bottom: 8px;">Быстрый расход / доход</div>
-      <input type="number" id="quick-amount" placeholder="Сумма (₽)">
-      <div class="btn-grid">
-        <div class="cat-btn" onclick="addTx('expense', 'Еда')">🍔 Еда</div>
-        <div class="cat-btn" onclick="addTx('expense', 'Такси')">🚕 Такси</div>
-        <div class="cat-btn" onclick="addTx('expense', 'Кафе')">☕ Кафе</div>
-        <div class="cat-btn" onclick="addTx('expense', 'Покупки')">🛍 Покупки</div>
-        <div class="cat-btn" onclick="addTx('expense', 'Связь')">📱 Связь</div>
-        <div class="cat-btn" onclick="addTx('income', 'Зарплата')">💵 Зарплата</div>
+      <div class="balance-lbl">⚡ Быстрый расход в 1 клик</div>
+      <div class="quick-list" id="quick-templates"></div>
+    </div>
+
+    <!-- Добавление РАСХОДА -->
+    <div class="card">
+      <div class="balance-lbl" style="margin-bottom: 8px; color: var(--red);">Внести Расход</div>
+      <input type="number" id="expense-amount" placeholder="Сумма расхода (₸)">
+      <div class="btn-grid" id="categories-grid"></div>
+      
+      <div class="settings-link" onclick="toggleCatSettings()">⚙️ Настройка категорий и шаблонов</div>
+      
+      <div id="cat-settings-block" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--card-border);">
+        <div class="balance-lbl" style="margin-bottom: 8px;">Мои категории</div>
+        <div id="categories-edit-list"></div>
+        <div class="flex-row" style="margin-top: 8px;">
+          <input type="text" id="new-cat-input" placeholder="Категория" style="margin:0;">
+          <button onclick="addCustomCategory()" style="padding:0 12px; border-radius:12px; border:none; background:var(--blue); color:#000; font-weight:bold;">+</button>
+        </div>
+
+        <div class="balance-lbl" style="margin-top: 16px; margin-bottom: 8px;">Быстрые шаблоны</div>
+        <div id="templates-edit-list"></div>
+        <div class="flex-row" style="margin-top: 8px; flex-wrap: wrap;">
+          <input type="text" id="tpl-title" placeholder="Имя (Автобус)" style="margin:0; width:30%;">
+          <input type="number" id="tpl-amt" placeholder="Сумма" style="margin:0; width:30%;">
+          <select id="tpl-cat" style="width:30%; margin:0;"></select>
+          <button onclick="addTemplate()" style="padding:0 12px; border-radius:12px; border:none; background:var(--blue); color:#000; font-weight:bold; width:100%; margin-top:4px;">Добавить шаблон</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Добавление ДОХОДА -->
+    <div class="card">
+      <div class="balance-lbl" style="margin-bottom: 8px; color: var(--green);">Внести Доход</div>
+      <div class="flex-row">
+        <input type="number" id="income-amount" placeholder="Сумма дохода (₸)" style="margin:0;">
+        <button onclick="addIncomeTx()" style="padding: 0 16px; border-radius:12px; border:none; background:var(--green); color:#000; font-weight:bold;">+ Доход</button>
       </div>
     </div>
 
@@ -85,149 +254,374 @@
     </div>
   </div>
 
-  <!-- ВКЛАДКА 2: Копилки -->
+  <!-- ВКЛАДКА 2: Статистика -->
+  <div id="tab-stats" class="tab-content">
+    <div class="card">
+      <div class="balance-lbl" style="margin-bottom: 8px; text-align: center;">📅 Календарь трат текущего месяца</div>
+      <div class="cal-grid" id="calendar-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="balance-lbl" style="margin-bottom: 12px; text-align: center;">Расходы по категориям</div>
+      <div style="max-width: 220px; margin: 0 auto;">
+        <canvas id="chart-categories"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="balance-lbl" style="margin-bottom: 8px;">Детализация</div>
+      <div id="stats-cat-list"></div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 3: Копилки -->
   <div id="tab-goals" class="tab-content">
     <div class="card">
       <div class="balance-lbl" style="margin-bottom: 8px;">Новая цель</div>
-      <input type="text" id="goal-title" placeholder="Название (например, ПК)">
-      <input type="number" id="goal-target" placeholder="Целевая сумма (₽)">
-      <button class="main-btn" onclick="createGoal()">Создать цель</button>
+      <div class="input-group"><input type="text" id="goal-title" placeholder="Название (Телефон)"></div>
+      <div class="input-group"><input type="number" id="goal-target" placeholder="Нужно накопить (₸)"></div>
+      <button class="main-btn" onclick="createGoal()">Создать копилку</button>
     </div>
-
     <div class="card">
       <div class="balance-lbl" style="margin-bottom: 8px;">Мои Копилки</div>
       <div id="goals-list"></div>
     </div>
   </div>
 
-  <!-- ВКЛАДКА 3: Подписки -->
+  <!-- ВКЛАДКА 4: Подписки -->
   <div id="tab-subs" class="tab-content">
     <div class="card">
       <div class="balance-lbl" style="margin-bottom: 8px;">Добавить подписку</div>
-      <input type="text" id="sub-title" placeholder="Сервис (Telegram Premium)">
-      <input type="number" id="sub-amount" placeholder="Стоимость в месяц (₽)">
+      <input type="text" id="sub-title" placeholder="Название (Telegram Premium)">
+      <input type="number" id="sub-amount" placeholder="Стоимость (₸)">
       <input type="number" id="sub-day" placeholder="День списания (1-31)">
       <button class="main-btn" onclick="createSub()">Сохранить подписку</button>
     </div>
-
     <div class="card">
-      <div class="balance-lbl">Всего на подписки: <b id="subs-total" style="color: var(--blue);">0 ₽</b></div>
+      <div class="balance-lbl">Всего в месяц: <b id="subs-total" style="color: var(--blue);">0 ₸</b></div>
       <div id="subs-list" style="margin-top: 10px;"></div>
     </div>
   </div>
 
+  <!-- Нижняя Навигация -->
   <div class="nav">
     <div class="nav-btn active" onclick="switchTab('main', this)">🏠 Главная</div>
+    <div class="nav-btn" onclick="switchTab('stats', this)">📊 Статистика</div>
     <div class="nav-btn" onclick="switchTab('goals', this)">🎯 Копилки</div>
     <div class="nav-btn" onclick="switchTab('subs', this)">📅 Подписки</div>
   </div>
 
   <script>
     const tg = window.Telegram?.WebApp;
-    if (tg) tg.expand();
+    if (tg) { tg.ready(); tg.expand(); }
 
-    // Локальное состояние приложения
+    let myChart = null;
     let store = {
+      categories: ['🍔 Еда', '🚕 Такси', '☕ Кафе', '🛍 Покупки', '📱 Связь', '🎮 Игры'],
+      templates: [
+        { title: '☕ Кофе', amount: 800, cat: '☕ Кафе' },
+        { title: '🚌 Автобус', amount: 70, cat: '🚕 Такси' }
+      ],
       transactions: [],
       goals: [],
       subscriptions: []
     };
 
-    // --- ЧТЕНИЕ И ЗАПИСЬ В TELEGRAM CLOUD ---
     function saveData() {
       const jsonStr = JSON.stringify(store);
-      if (tg?.CloudStorage) {
-        tg.CloudStorage.setItem('finance_data', jsonStr);
-      } else {
-        localStorage.setItem('finance_data', jsonStr); // Запасной вариант для браузера
-      }
+      try {
+        if (tg && tg.CloudStorage) { tg.CloudStorage.setItem('finance_data_v5', jsonStr); }
+        localStorage.setItem('finance_data_v5', jsonStr);
+      } catch (e) { console.error(e); }
       renderAll();
     }
 
     function loadData() {
-      if (tg?.CloudStorage) {
-        tg.CloudStorage.getItem('finance_data', (err, value) => {
-          if (!err && value) store = JSON.parse(value);
+      if (tg && tg.CloudStorage) {
+        tg.CloudStorage.getItem('finance_data_v5', (err, value) => {
+          if (!err && value) {
+            try { store = JSON.parse(value); } catch(e){}
+          } else { loadFromLocalStorage(); }
           renderAll();
         });
-      } else {
-        const local = localStorage.getItem('finance_data');
-        if (local) store = JSON.parse(local);
-        renderAll();
-      }
+      } else { loadFromLocalStorage(); renderAll(); }
     }
 
-    // --- ЛОГИКА И ОТРЕСОВКА ---
+    function loadFromLocalStorage() {
+      const local = localStorage.getItem('finance_data_v5');
+      if (local) { try { store = JSON.parse(local); } catch(e){} }
+    }
+
     function renderAll() {
-      // Расчет сумм
-      const inc = store.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-      const exp = store.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-      const inGoals = store.goals.reduce((s, g) => s + g.current, 0);
+      // Баланс
+      const inc = store.transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+      const exp = store.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+      const inGoals = store.goals.reduce((s, g) => s + Number(g.current), 0);
       const balance = inc - exp - inGoals;
 
-      // Дневной лимит
+      // Лимит
       const now = new Date();
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const daysLeft = Math.max(1, daysInMonth - now.getDate() + 1);
       const dailyLimit = balance > 0 ? Math.round(balance / daysLeft) : 0;
 
-      document.getElementById('balance').innerText = `${balance.toLocaleString()} ₽`;
-      document.getElementById('income').innerText = `+${inc.toLocaleString()} ₽`;
-      document.getElementById('expense').innerText = `-${exp.toLocaleString()} ₽`;
-      document.getElementById('daily-limit').innerText = `Лимит: ~${dailyLimit.toLocaleString()} ₽/день (осталось ${daysLeft} дн.)`;
+      document.getElementById('balance').innerText = `${balance.toLocaleString()} ₸`;
+      document.getElementById('income').innerText = `+${inc.toLocaleString()} ₸`;
+      document.getElementById('expense').innerText = `-${exp.toLocaleString()} ₸`;
+      document.getElementById('daily-limit').innerText = `Дневной лимит: ~${dailyLimit.toLocaleString()} ₸/день (${daysLeft} дн. осталось)`;
 
-      // Список операций
-      const txList = document.getElementById('tx-list');
-      txList.innerHTML = store.transactions.slice(-10).reverse().map(t => `
-        <div class="tx-item">
-          <span><b>${t.category}</b></span>
-          <span class="${t.type === 'income' ? 'inc' : 'exp'}">
-            ${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString()} ₽
-          </span>
+      // Быстрые шаблоны
+      document.getElementById('quick-templates').innerHTML = store.templates.map(tpl => `
+        <div class="quick-btn" onclick="useTemplate('${tpl.title}', ${tpl.amount}, '${tpl.cat}')">
+          ${tpl.title} (${tpl.amount} ₸)
         </div>
       `).join('');
 
-      // Список копилок
-      document.getElementById('goals-list').innerHTML = store.goals.map((g, idx) => {
-        const percent = Math.min(100, Math.round((g.current / g.target) * 100));
-        return `
-          <div style="margin-bottom: 12px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px;">
-              <b>${g.title}</b>
-              <span>${g.current.toLocaleString()} / ${g.target.toLocaleString()} ₽</span>
+      // Категории
+      document.getElementById('categories-grid').innerHTML = store.categories.map(cat => `
+        <div class="cat-btn" onclick="addExpenseTx('${cat}')">${cat}</div>
+      `).join('');
+
+      // Селект категорий для формы шаблона
+      document.getElementById('tpl-cat').innerHTML = store.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      // Редактор Категорий и Шаблонов
+      document.getElementById('categories-edit-list').innerHTML = store.categories.map((cat, idx) => `
+        <div class="cat-edit-item">
+          <span>${cat}</span><span class="del-btn" onclick="deleteCategory(${idx})">✕</span>
+        </div>
+      `).join('');
+
+      document.getElementById('templates-edit-list').innerHTML = store.templates.map((tpl, idx) => `
+        <div class="cat-edit-item">
+          <span>${tpl.title} — ${tpl.amount} ₸ (${tpl.cat})</span><span class="del-btn" onclick="deleteTemplate(${idx})">✕</span>
+        </div>
+      `).join('');
+
+      // Транзакции
+      const txList = document.getElementById('tx-list');
+      if (store.transactions.length === 0) {
+        txList.innerHTML = '<div style="color:var(--muted); font-size:12px; padding:8px 0;">Нет операций</div>';
+      } else {
+        txList.innerHTML = store.transactions.slice(-8).reverse().map((t, i) => {
+          const realIdx = store.transactions.length - 1 - i;
+          return `
+            <div class="tx-item">
+              <span><b>${t.category}</b></span>
+              <div>
+                <span class="${t.type === 'income' ? 'inc' : 'exp'}">
+                  ${t.type === 'income' ? '+' : '-'}${Number(t.amount).toLocaleString()} ₸
+                </span>
+                <span class="del-btn" onclick="deleteTx(${realIdx})">✕</span>
+              </div>
             </div>
-            <div class="progress-bg"><div class="progress-fill" style="width: ${percent}%;"></div></div>
-            <button onclick="topupGoal(${idx})" style="padding:4px 8px; font-size:11px; background:#334155; color:#fff; border:none; border-radius:6px; cursor:pointer;">+ 1 000 ₽</button>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      }
+
+      renderGoalsAndSubs();
+      renderCalendar();
+      renderStats();
+    }
+
+    function renderGoalsAndSubs() {
+      // Копилки
+      const goalsList = document.getElementById('goals-list');
+      if (store.goals.length === 0) {
+        goalsList.innerHTML = '<div style="color:var(--muted); font-size:12px;">Копилок пока нет</div>';
+      } else {
+        goalsList.innerHTML = store.goals.map((g, idx) => {
+          const percent = Math.min(100, Math.round((g.current / g.target) * 100));
+          return `
+            <div style="margin-bottom: 12px; background: rgba(15,23,42,0.4); padding: 10px; border-radius: 12px;">
+              <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom: 4px;">
+                <b>${g.title}</b><span>${g.current.toLocaleString()} / ${g.target.toLocaleString()} ₸</span>
+              </div>
+              <div class="progress-bg"><div class="progress-fill" style="width: ${percent}%;"></div></div>
+              <div class="flex-row" style="margin-top: 6px;">
+                <input type="number" id="goal-add-${idx}" placeholder="Сумма (₸)" style="margin:0; padding:6px; font-size:12px;">
+                <button onclick="topupGoal(${idx})" style="padding:6px 10px; font-size:11px; background:var(--blue); color:#000; font-weight:bold; border:none; border-radius:8px;">+</button>
+                <span class="del-btn" style="line-height:26px;" onclick="deleteGoal(${idx})">Удалить</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
 
       // Подписки
-      const subTotal = store.subscriptions.reduce((s, sub) => s + sub.amount, 0);
-      document.getElementById('subs-total').innerText = `${subTotal.toLocaleString()} ₽`;
-      document.getElementById('subs-list').innerHTML = store.subscriptions.map(s => `
-        <div class="sub-item">
-          <span><b>${s.title}</b> (${s.day}-е число)</span>
-          <span style="color: var(--blue);">${s.amount.toLocaleString()} ₽</span>
-        </div>
-      `).join('');
+      const subTotal = store.subscriptions.reduce((s, sub) => s + Number(sub.amount), 0);
+      document.getElementById('subs-total').innerText = `${subTotal.toLocaleString()} ₸`;
+      const subsList = document.getElementById('subs-list');
+      if (store.subscriptions.length === 0) {
+        subsList.innerHTML = '<div style="color:var(--muted); font-size:12px;">Подписок нет</div>';
+      } else {
+        subsList.innerHTML = store.subscriptions.map((s, idx) => `
+          <div class="sub-item">
+            <span><b>${s.title}</b> (${s.day}-е число)</span>
+            <div><span style="color: var(--blue);">${Number(s.amount).toLocaleString()} ₸</span><span class="del-btn" onclick="deleteSub(${idx})">✕</span></div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // --- КАЛЕНДАРЬ ---
+    function renderCalendar() {
+      const calGrid = document.getElementById('calendar-grid');
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = now.getDate();
+
+      const dailyExpenses = {};
+      store.transactions.forEach(t => {
+        if (t.type === 'expense') {
+          const d = new Date(t.date);
+          if (d.getFullYear() === year && d.getMonth() === month) {
+            const dayNum = d.getDate();
+            dailyExpenses[dayNum] = (dailyExpenses[dayNum] || 0) + Number(t.amount);
+          }
+        }
+      });
+
+      let html = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => `<div class="cal-head">${d}</div>`).join('');
+      
+      const firstDayIdx = (new Date(year, month, 1).getDay() + 6) % 7;
+      for (let i = 0; i < firstDayIdx; i++) { html += `<div></div>`; }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const amt = dailyExpenses[day] || 0;
+        let levelClass = 'level-0';
+        if (amt > 0 && amt <= 5000) levelClass = 'level-1';
+        if (amt > 5000) levelClass = 'level-2';
+
+        const isToday = day === today ? 'today' : '';
+        const amtText = amt > 0 ? `-${amt.toLocaleString()}₸` : '';
+
+        html += `
+          <div class="cal-day ${levelClass} ${isToday}">
+            <span class="day-num">${day}</span>
+            <span class="day-amt">${amtText}</span>
+          </div>
+        `;
+      }
+      calGrid.innerHTML = html;
+    }
+
+    // --- СТАТИСТИКА ---
+    function renderStats() {
+      const expenses = store.transactions.filter(t => t.type === 'expense');
+      const catTotals = {};
+      expenses.forEach(t => { catTotals[t.category] = (catTotals[t.category] || 0) + Number(t.amount); });
+
+      const labels = Object.keys(catTotals);
+      const data = Object.values(catTotals);
+
+      const statsList = document.getElementById('stats-cat-list');
+      if (labels.length === 0) {
+        statsList.innerHTML = '<div style="color:var(--muted); font-size:12px;">Трат за этот период нет</div>';
+      } else {
+        const totalExp = data.reduce((a, b) => a + b, 0);
+        statsList.innerHTML = labels.map((cat, i) => {
+          const pct = Math.round((data[i] / totalExp) * 100);
+          return `
+            <div class="stat-item">
+              <span><b>${cat}</b> (${pct}%)</span>
+              <span style="color: var(--red); font-weight: bold;">-${data[i].toLocaleString()} ₸</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const ctx = document.getElementById('chart-categories').getContext('2d');
+      if (myChart) { myChart.destroy(); }
+
+      if (labels.length > 0) {
+        myChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: data,
+              backgroundColor: ['#38bdf8', '#f43f5e', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'],
+              borderWidth: 0
+            }]
+          },
+          options: { plugins: { legend: { display: false } }, cutout: '70%' }
+        });
+      }
     }
 
     // --- ДЕЙСТВИЯ ---
-    function addTx(type, category) {
-      const amt = parseFloat(document.getElementById('quick-amount').value);
-      if (!amt || amt <= 0) return alert("Введи сумму!");
-
-      store.transactions.push({ type, category, amount: amt, date: new Date().toISOString() });
-      document.getElementById('quick-amount').value = '';
+    function useTemplate(title, amount, cat) {
+      store.transactions.push({ type: 'expense', category: cat || title, amount: amount, date: new Date().toISOString() });
       saveData();
     }
+
+    function addTemplate() {
+      const title = document.getElementById('tpl-title').value.trim();
+      const amount = parseFloat(document.getElementById('tpl-amt').value);
+      const cat = document.getElementById('tpl-cat').value;
+
+      if (!title || !amount) return alert("Заполните название и сумму!");
+
+      store.templates.push({ title, amount, cat });
+      document.getElementById('tpl-title').value = '';
+      document.getElementById('tpl-amt').value = '';
+      saveData();
+    }
+
+    function deleteTemplate(idx) {
+      store.templates.splice(idx, 1);
+      saveData();
+    }
+
+    function toggleCatSettings() {
+      const block = document.getElementById('cat-settings-block');
+      block.style.display = block.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function addCustomCategory() {
+      const name = document.getElementById('new-cat-input').value.trim();
+      if (!name) return alert("Введите название!");
+      if (store.categories.includes(name)) return alert("Уже есть!");
+      store.categories.push(name);
+      document.getElementById('new-cat-input').value = '';
+      saveData();
+    }
+
+    function deleteCategory(idx) {
+      if (store.categories.length <= 1) return alert("Нужна хотя бы 1 категория!");
+      store.categories.splice(idx, 1);
+      saveData();
+    }
+
+    function addExpenseTx(category) {
+      const input = document.getElementById('expense-amount');
+      const amt = parseFloat(input.value);
+      if (!amt || amt <= 0) return alert("Введите сумму!");
+
+      store.transactions.push({ type: 'expense', category, amount: amt, date: new Date().toISOString() });
+      input.value = '';
+      saveData();
+    }
+
+    function addIncomeTx() {
+      const input = document.getElementById('income-amount');
+      const amt = parseFloat(input.value);
+      if (!amt || amt <= 0) return alert("Введите сумму!");
+
+      store.transactions.push({ type: 'income', category: '💵 Доход', amount: amt, date: new Date().toISOString() });
+      input.value = '';
+      saveData();
+    }
+
+    function deleteTx(idx) { store.transactions.splice(idx, 1); saveData(); }
 
     function createGoal() {
       const title = document.getElementById('goal-title').value;
       const target = parseFloat(document.getElementById('goal-target').value);
-      if (!title || !target) return alert("Заполни поля!");
-
+      if (!title || !target) return alert("Заполните поля!");
       store.goals.push({ title, target, current: 0 });
       document.getElementById('goal-title').value = '';
       document.getElementById('goal-target').value = '';
@@ -235,22 +629,29 @@
     }
 
     function topupGoal(idx) {
-      store.goals[idx].current += 1000;
+      const input = document.getElementById(`goal-add-${idx}`);
+      const amt = parseFloat(input.value);
+      if (!amt || amt <= 0) return alert("Введите сумму!");
+      store.goals[idx].current += amt;
+      input.value = '';
       saveData();
     }
+
+    function deleteGoal(idx) { store.goals.splice(idx, 1); saveData(); }
 
     function createSub() {
       const title = document.getElementById('sub-title').value;
       const amount = parseFloat(document.getElementById('sub-amount').value);
       const day = parseInt(document.getElementById('sub-day').value);
-      if (!title || !amount || !day) return alert("Заполни поля!");
-
+      if (!title || !amount || !day) return alert("Заполните поля!");
       store.subscriptions.push({ title, amount, day });
       document.getElementById('sub-title').value = '';
       document.getElementById('sub-amount').value = '';
       document.getElementById('sub-day').value = '';
       saveData();
     }
+
+    function deleteSub(idx) { store.subscriptions.splice(idx, 1); saveData(); }
 
     function switchTab(tab, btn) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
